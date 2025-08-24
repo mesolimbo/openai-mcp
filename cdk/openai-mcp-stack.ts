@@ -4,6 +4,7 @@ import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import * as path from 'path';
@@ -17,6 +18,18 @@ export class OpenAIMcpStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: OpenAIMcpStackProps) {
     super(scope, id, props);
 
+    // Create secret for auth token
+    const authTokenSecret = new secretsmanager.Secret(this, 'AuthTokenSecret', {
+      secretName: 'openai-mcp-auth-token',
+      description: 'Authentication token for OpenAI MCP server',
+      generateSecretString: {
+        secretStringTemplate: '{}',
+        generateStringKey: 'token',
+        excludeCharacters: '"\\/',
+        passwordLength: 64,
+      },
+    });
+
     // Lambda function for the MCP server with Function URL (no 29s timeout)
     const mcpLambda = new lambdaNodejs.NodejsFunction(this, 'OpenAIMcpFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -28,6 +41,7 @@ export class OpenAIMcpStack extends cdk.Stack {
         NODE_ENV: 'production',
         OPENAI_API_KEY: props.config.openaiApiKey,
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1', // Reuse connections
+        AUTH_SECRET_NAME: authTokenSecret.secretName,
       },
       bundling: {
         target: 'es2022',
@@ -35,6 +49,9 @@ export class OpenAIMcpStack extends cdk.Stack {
         minify: true,
       },
     });
+
+    // Grant Lambda permission to read the auth token secret
+    authTokenSecret.grantRead(mcpLambda);
 
     // Create Function URL for direct Lambda access (no API Gateway timeout)
     const functionUrl = mcpLambda.addFunctionUrl({
@@ -113,6 +130,12 @@ export class OpenAIMcpStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'LambdaFunctionName', {
       value: mcpLambda.functionName,
       description: 'Name of the Lambda function',
+    });
+
+    // Output the auth token secret ARN
+    new cdk.CfnOutput(this, 'AuthTokenSecretArn', {
+      value: authTokenSecret.secretArn,
+      description: 'ARN of the authentication token secret',
     });
   }
 }

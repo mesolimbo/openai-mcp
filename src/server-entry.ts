@@ -2,6 +2,7 @@
 
 import * as http from 'http';
 import { initializeApp, handleMcpRequest } from './app';
+import { validateAuthToken, createAuthError } from './auth';
 
 // Detect environment
 const isLambda = Boolean(
@@ -29,6 +30,17 @@ const httpServer = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Validate authentication for ALL requests
+  const authHeader = req.headers?.authorization;
+  const isAuthenticated = await validateAuthToken(authHeader);
+  
+  if (!isAuthenticated) {
+    const authError = createAuthError();
+    res.writeHead(authError.statusCode, authError.headers);
+    res.end(authError.body);
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);

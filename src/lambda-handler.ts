@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { initializeApp, handleMcpRequest } from './app';
+import { validateAuthToken, createAuthError } from './auth';
 
 // Initialize the app once (outside handler for better performance)
 initializeApp();
@@ -15,6 +16,18 @@ export const handler = async (
   };
 
   try {
+    // Validate authentication for ALL requests
+    const authHeader = event.headers?.Authorization || event.headers?.authorization;
+    const isAuthenticated = await validateAuthToken(authHeader);
+    
+    if (!isAuthenticated) {
+      const authError = createAuthError();
+      return {
+        ...authError,
+        headers: { ...headers, ...authError.headers },
+      };
+    }
+
     if (event.httpMethod === 'OPTIONS') {
       return {
         statusCode: 200,
