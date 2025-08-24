@@ -1,0 +1,32 @@
+{
+  "name": "openai-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for OpenAI API queries",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server-entry.js",
+    "dev": "tsx src/index.ts",
+    "dev:http": "npm run build && node bin/dev.js",
+    "dev:direct": "tsx src/server-entry.ts",
+    "deploy": "npm run build && cdk deploy",
+    "setup": "node -e \"console.log('Please create config.json from config.json.example with your settings')\"",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "openai": "^4.67.1",
+    "aws-cdk-lib": "^2.164.1",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/aws-lambda": "^8.10.145",
+    "typescript": "^5.6.2",
+    "tsx": "^4.19.1",
+    "aws-cdk": "^2.164.1"
+  },
+  "keywords": ["mcp", "openai", "api", "aws", "cdk"],
+  "author": "",
+  "license": "MIT"
+}

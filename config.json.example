@@ -1,0 +1,4 @@
+{
+  "openaiApiKey": "your-openai-api-key-here",
+  "customDomain": "your-subdomain.your-domain.com"
+}
