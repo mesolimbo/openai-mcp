@@ -30,6 +30,15 @@ export class OpenAIMcpStack extends cdk.Stack {
       },
     });
 
+    // Create secret for OpenAI API key
+    const openaiApiKeySecret = new secretsmanager.Secret(this, 'OpenAIApiKeySecret', {
+      secretName: 'openai-mcp-api-key',
+      description: 'OpenAI API key for MCP server',
+      secretStringValue: cdk.SecretValue.unsafePlainText(JSON.stringify({
+        apiKey: props.config.openaiApiKey
+      })),
+    });
+
     // Lambda function for the MCP server with Function URL (no 29s timeout)
     const mcpLambda = new lambdaNodejs.NodejsFunction(this, 'OpenAIMcpFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -39,9 +48,10 @@ export class OpenAIMcpStack extends cdk.Stack {
       memorySize: 512, // More memory for better performance
       environment: {
         NODE_ENV: 'production',
-        OPENAI_API_KEY: props.config.openaiApiKey,
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1', // Reuse connections
         AUTH_SECRET_NAME: authTokenSecret.secretName,
+        OPENAI_API_KEY_SECRET_NAME: openaiApiKeySecret.secretName,
+        CACHE_INVALIDATE: '5', // Force cache refresh
       },
       bundling: {
         target: 'es2022',
@@ -50,8 +60,9 @@ export class OpenAIMcpStack extends cdk.Stack {
       },
     });
 
-    // Grant Lambda permission to read the auth token secret
+    // Grant Lambda permission to read both secrets
     authTokenSecret.grantRead(mcpLambda);
+    openaiApiKeySecret.grantRead(mcpLambda);
 
     // Create Function URL for direct Lambda access (no API Gateway timeout)
     const functionUrl = mcpLambda.addFunctionUrl({
@@ -59,7 +70,7 @@ export class OpenAIMcpStack extends cdk.Stack {
       cors: {
         allowCredentials: false,
         allowedHeaders: ['Content-Type', 'Authorization'],
-        allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST, lambda.HttpMethod.OPTIONS],
+        allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
         allowedOrigins: ['*'], // TODO: Restrict in production
         maxAge: cdk.Duration.hours(1),
       },
@@ -68,11 +79,11 @@ export class OpenAIMcpStack extends cdk.Stack {
     // Import certificate from us-east-1 if custom domain is specified
     let certificate: certificatemanager.ICertificate | undefined;
     if (props.config.customDomain) {
-      const certificateArn = cdk.Fn.importValue(`${props.config.customDomain.replace(/\./g, '-')}-CertificateStack-CertificateArn`);
+      // Use the specific certificate ARN from us-east-1
       certificate = certificatemanager.Certificate.fromCertificateArn(
         this,
         'ImportedCertificate',
-        certificateArn
+        'arn:aws:acm:us-east-1:758858364187:certificate/94dfda29-7809-47cd-ba30-8bf1c22e74bd'
       );
     }
 
@@ -136,6 +147,12 @@ export class OpenAIMcpStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'AuthTokenSecretArn', {
       value: authTokenSecret.secretArn,
       description: 'ARN of the authentication token secret',
+    });
+
+    // Output the OpenAI API key secret ARN
+    new cdk.CfnOutput(this, 'OpenAIApiKeySecretArn', {
+      value: openaiApiKeySecret.secretArn,
+      description: 'ARN of the OpenAI API key secret',
     });
   }
 }

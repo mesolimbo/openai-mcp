@@ -3,7 +3,7 @@ import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-sec
 let secretsClient: SecretsManagerClient;
 let cachedToken: string | null = null;
 let cacheExpiry = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 function getSecretsClient(): SecretsManagerClient {
   if (!secretsClient) {
@@ -14,10 +14,10 @@ function getSecretsClient(): SecretsManagerClient {
   return secretsClient;
 }
 
-async function getAuthTokenFromSecrets(): Promise<string> {
+async function getAuthPasswordFromSecrets(): Promise<string> {
   const now = Date.now();
   
-  // Return cached token if still valid
+  // Return cached password if still valid
   if (cachedToken && now < cacheExpiry) {
     return cachedToken;
   }
@@ -33,13 +33,21 @@ async function getAuthTokenFromSecrets(): Promise<string> {
       throw new Error('Secret value is empty');
     }
     
-    // Cache the token
-    cachedToken = response.SecretString.trim();
+    // Parse JSON and extract password (fallback to token for backwards compatibility)
+    const secretData = JSON.parse(response.SecretString);
+    const password = secretData.password || secretData.token;
+    if (!password || typeof password !== 'string') {
+      throw new Error('Password not found in secret');
+    }
+    
+    // Cache the password
+    const passwordValue = password.trim();
+    cachedToken = passwordValue;
     cacheExpiry = now + CACHE_TTL;
     
-    return cachedToken;
+    return passwordValue;
   } catch (error) {
-    console.error('Failed to retrieve auth token from Secrets Manager:', error);
+    console.error('Failed to retrieve auth password from Secrets Manager:', error);
     throw new Error('Authentication configuration error');
   }
 }
@@ -49,19 +57,27 @@ export async function validateAuthToken(authHeader: string | undefined): Promise
     return false;
   }
   
-  // Extract bearer token
-  const matches = authHeader.match(/^Bearer\s+(.+)$/i);
+  // Extract Basic auth credentials
+  const matches = authHeader.match(/^Basic\s+(.+)$/i);
   if (!matches) {
     return false;
   }
   
-  const providedToken = matches[1];
+  const encodedCredentials = matches[1];
   
   try {
-    const validToken = await getAuthTokenFromSecrets();
-    return providedToken === validToken;
+    // Decode base64 credentials
+    const decodedCredentials = Buffer.from(encodedCredentials, 'base64').toString('utf-8');
+    const [username, password] = decodedCredentials.split(':');
+    
+    if (username !== 'admin') {
+      return false;
+    }
+    
+    const validPassword = await getAuthPasswordFromSecrets();
+    return password === validPassword;
   } catch (error) {
-    console.error('Token validation failed:', error);
+    console.error('Auth validation failed:', error);
     return false;
   }
 }
@@ -71,8 +87,8 @@ export function createAuthError(): { statusCode: number; headers: any; body: str
     statusCode: 401,
     headers: {
       'Content-Type': 'application/json',
-      'WWW-Authenticate': 'Bearer'
+      'WWW-Authenticate': 'Basic realm="OpenAI MCP Server"'
     },
-    body: JSON.stringify({ error: 'Unauthorized - Valid Bearer token required' })
+    body: JSON.stringify({ error: 'Unauthorized - Valid Basic auth required (username: admin)' })
   };
 }
