@@ -1,11 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { AppConfig } from '../src/config';
@@ -76,54 +72,6 @@ export class OpenAIMcpStack extends cdk.Stack {
       },
     });
 
-    // Import certificate from us-east-1 if custom domain is specified
-    let certificate: certificatemanager.ICertificate | undefined;
-    if (props.config.customDomain) {
-      // Use the specific certificate ARN from us-east-1
-      certificate = certificatemanager.Certificate.fromCertificateArn(
-        this,
-        'ImportedCertificate',
-        'arn:aws:acm:us-east-1:758858364187:certificate/94dfda29-7809-47cd-ba30-8bf1c22e74bd'
-      );
-    }
-
-    // Create CloudFront distribution for custom domain and global edge caching
-    let distribution: cloudfront.Distribution | undefined;
-    
-    if (props.config.customDomain && certificate) {
-      distribution = new cloudfront.Distribution(this, 'McpDistribution', {
-        defaultBehavior: {
-          origin: new origins.FunctionUrlOrigin(functionUrl),
-          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: new cloudfront.CachePolicy(this, 'McpCachePolicy', {
-            cachePolicyName: 'OpenAI-MCP-Cache-Policy',
-            defaultTtl: cdk.Duration.seconds(0), // No caching for dynamic API responses
-            maxTtl: cdk.Duration.seconds(1),
-            minTtl: cdk.Duration.seconds(0),
-            headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
-              'Content-Type', 'Authorization', 'Accept'
-            ),
-            queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-          }),
-          originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
-        },
-        domainNames: [props.config.customDomain],
-        certificate: certificate,
-        priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // Use only North America and Europe
-        comment: 'OpenAI MCP Server Distribution',
-      });
-
-      new cdk.CfnOutput(this, 'CustomDomainName', {
-        value: props.config.customDomain,
-        description: 'Custom domain name for the API',
-      });
-
-      new cdk.CfnOutput(this, 'CloudFrontDistribution', {
-        value: distribution.distributionDomainName,
-        description: 'CloudFront distribution domain name for CNAME record',
-      });
-    }
 
     // Output the Function URL (direct Lambda access)
     new cdk.CfnOutput(this, 'FunctionUrl', {
@@ -131,9 +79,9 @@ export class OpenAIMcpStack extends cdk.Stack {
       description: 'Direct Lambda Function URL (no timeout limits)',
     });
 
-    // Output the main API URL (custom domain if available, otherwise function URL)
+    // Output the main API URL (function URL only)
     new cdk.CfnOutput(this, 'ApiUrl', {
-      value: props.config.customDomain ? `https://${props.config.customDomain}` : functionUrl.url,
+      value: functionUrl.url,
       description: 'Main API URL for the OpenAI MCP server',
     });
 

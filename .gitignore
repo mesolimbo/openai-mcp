@@ -100,3 +100,4 @@ cdk.context.json
 *.crt
 *.p12
 *.pfx
+outputs.json
