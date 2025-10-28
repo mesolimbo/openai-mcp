@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { AppConfig } from '../src/config';
@@ -70,6 +71,17 @@ export class OpenAIMcpStack extends cdk.Stack {
         allowedOrigins: ['*'], // TODO: Restrict in production
         maxAge: cdk.Duration.hours(1),
       },
+    });
+
+    // Add lambda:InvokeFunction permission as required by AWS Lambda's new authorization model
+    // Note: lambda:InvokeFunctionUrl is automatically added by addFunctionUrl() above
+    // Both permissions are required as of CDK 2.218.0+ (October 2025 requirement)
+    // Use InvokedViaFunctionUrl property to restrict to function URL calls only
+    new lambda.CfnPermission(this, 'InvokeFunctionPermission', {
+      action: 'lambda:InvokeFunction',
+      functionName: mcpLambda.functionName,
+      principal: '*',
+      invokedViaFunctionUrl: true, // Ensures function can only be invoked via function URL
     });
 
 
