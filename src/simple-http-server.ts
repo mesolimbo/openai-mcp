@@ -62,32 +62,32 @@ const httpServer = http.createServer(async (req, res) => {
                     model: {
                       type: 'string',
                       description: 'The OpenAI model to use',
-                      default: 'gpt-5',
+                      default: 'gpt-5.1',
                     },
                     max_tokens: {
                       type: 'number',
-                      description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5)',
+                      description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.1)',
                       default: 1000,
                     },
                     max_completion_tokens: {
                       type: 'number',
-                      description: 'Maximum completion tokens (for GPT-5 and newer models)',
+                      description: 'Maximum completion tokens (for GPT-5.1 and newer models)',
                     },
                     reasoning_effort: {
                       type: 'string',
-                      description: 'Reasoning effort level for GPT-5 models',
+                      description: 'Reasoning effort level for GPT-5.1 models',
                       enum: ['minimal', 'low', 'medium', 'high'],
                       default: 'medium',
                     },
                     verbosity: {
-                      type: 'string', 
-                      description: 'Response verbosity level for GPT-5 models',
+                      type: 'string',
+                      description: 'Response verbosity level for GPT-5.1 models',
                       enum: ['low', 'medium', 'high'],
                       default: 'medium',
                     },
                     use_responses_api: {
                       type: 'boolean',
-                      description: 'Use Responses API for GPT-5 (recommended for best performance)',
+                      description: 'Use Responses API for GPT-5.1 (recommended for best performance)',
                       default: true,
                     },
                   },
@@ -99,9 +99,9 @@ const httpServer = http.createServer(async (req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(response));
         } else if (requestData.method === 'tools/call' && requestData.params?.name === 'query_openai') {
-          const { 
-            prompt, 
-            model = 'gpt-5', 
+          const {
+            prompt,
+            model = 'gpt-5.1',
             max_tokens = 1000, 
             max_completion_tokens,
             reasoning_effort = 'medium',
@@ -114,7 +114,7 @@ const httpServer = http.createServer(async (req, res) => {
             
             if (model.startsWith('gpt-5')) {
               if (use_responses_api) {
-                // GPT-5 with Responses API (recommended)
+                // GPT-5.1 with Responses API (recommended)
                 const responseOptions: any = {
                   model,
                   input: prompt,
@@ -133,7 +133,7 @@ const httpServer = http.createServer(async (req, res) => {
                   ],
                 };
               } else {
-                // GPT-5 with Chat Completions API
+                // GPT-5.1 with Chat Completions API
                 const requestOptions: any = {
                   model,
                   messages: [{ role: 'user', content: prompt }],

@@ -116,7 +116,7 @@ export const handler = async (
         headers,
         body: JSON.stringify({
           service: 'OpenAI MCP Server',
-          description: 'MCP server for OpenAI API queries with GPT-5 support',
+          description: 'MCP server for OpenAI API queries with GPT-5.1 support',
           version: '1.0.0',
           protocolVersion: '2024-11-05',
           capabilities: {
