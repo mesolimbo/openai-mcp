@@ -38,7 +38,7 @@ export class OpenAIMcpStack extends cdk.Stack {
 
     // Lambda function for the MCP server with Function URL (no 29s timeout)
     const mcpLambda = new lambdaNodejs.NodejsFunction(this, 'OpenAIMcpFunction', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       entry: path.join(__dirname, '../src/lambda-handler.ts'),
       handler: 'handler',
       timeout: cdk.Duration.minutes(15), // Much longer timeout for LLM calls

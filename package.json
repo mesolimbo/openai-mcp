@@ -11,7 +11,10 @@
     "dev:direct": "tsx src/server-entry.ts",
     "deploy": "npm run build && cdk deploy",
     "setup": "node -e \"console.log('Please create config.json from config.json.example with your settings')\"",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.873.0",
@@ -21,10 +24,14 @@
     "openai": "^4.67.1"
   },
   "devDependencies": {
+    "@jest/globals": "^30.2.0",
     "@types/aws-lambda": "^8.10.145",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.7.4",
     "aws-cdk": "^2.164.1",
+    "jest": "^30.2.0",
     "source-map-support": "^0.5.21",
+    "ts-jest": "^29.4.5",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2"
   },
@@ -36,5 +43,8 @@
     "cdk"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.21.0"
+  }
 }
