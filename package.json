@@ -20,7 +20,7 @@
     "@aws-sdk/client-secrets-manager": "^3.873.0",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "aws-cdk-lib": "^2.164.1",
-    "constructs": "^10.3.0",
+    "constructs": "^10.4.4",
     "openai": "^4.67.1"
   },
   "devDependencies": {
