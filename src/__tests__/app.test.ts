@@ -180,9 +180,9 @@ describe('App Module', () => {
       });
     });
 
-    test('should query GPT-5.1 with Responses API', async () => {
+    test('should query GPT-5.2 with Responses API', async () => {
       mockResponsesCreate.mockResolvedValue({
-        output_text: 'Response from GPT-5.1'
+        output_text: 'Response from GPT-5.2'
       });
 
       const request = {
@@ -193,7 +193,7 @@ describe('App Module', () => {
           name: 'query_openai',
           arguments: {
             prompt: 'Explain quantum computing',
-            model: 'gpt-5.1',
+            model: 'gpt-5.2',
             reasoning_effort: 'high',
             verbosity: 'high',
             use_responses_api: true
@@ -205,16 +205,16 @@ describe('App Module', () => {
 
       expect(response.jsonrpc).toBe('2.0');
       expect(response.id).toBe(6);
-      expect(response.result?.content[0]?.text).toBe('Response from GPT-5.1');
+      expect(response.result?.content[0]?.text).toBe('Response from GPT-5.2');
       expect(mockResponsesCreate).toHaveBeenCalledWith({
-        model: 'gpt-5.1',
+        model: 'gpt-5.2',
         input: 'Explain quantum computing',
         reasoning: { effort: 'high' },
         text: { verbosity: 'high' }
       });
     });
 
-    test('should query GPT-5.1 with Chat Completions API', async () => {
+    test('should query GPT-5.2 with Chat Completions API', async () => {
       mockChatCompletionsCreate.mockResolvedValue({
         choices: [{
           message: {
@@ -231,7 +231,7 @@ describe('App Module', () => {
           name: 'query_openai',
           arguments: {
             prompt: 'Test prompt',
-            model: 'gpt-5.1',
+            model: 'gpt-5.2',
             reasoning_effort: 'medium',
             verbosity: 'low',
             use_responses_api: false,
@@ -244,7 +244,7 @@ describe('App Module', () => {
 
       expect(response.result?.content[0]?.text).toBe('Chat completion response');
       expect(mockChatCompletionsCreate).toHaveBeenCalledWith({
-        model: 'gpt-5.1',
+        model: 'gpt-5.2',
         messages: [{ role: 'user', content: 'Test prompt' }],
         reasoning_effort: 'medium',
         verbosity: 'low',
@@ -298,7 +298,7 @@ describe('App Module', () => {
 
       expect(response.result?.content[0]?.text).toBe('Default params response');
       expect(mockResponsesCreate).toHaveBeenCalledWith({
-        model: 'gpt-5.1',
+        model: 'gpt-5.2',
         input: 'Test with defaults',
         reasoning: { effort: 'medium' },
         text: { verbosity: 'medium' }
