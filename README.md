@@ -1,15 +1,15 @@
 # OpenAI MCP Server
 
-A Model Context Protocol (MCP) server that provides access to OpenAI's API, including GPT-5.1 support with advanced reasoning capabilities. Deployable to AWS Lambda via CDK with secure Basic authentication.
+A Model Context Protocol (MCP) server that provides access to OpenAI's API, including GPT-5.2 support with advanced reasoning capabilities. Deployable to AWS Lambda via CDK with secure Basic authentication.
 
 ## Features
 
 - **Full MCP Protocol Support**: JSON-RPC 2.0 compliant MCP server implementation
-- **OpenAI API Integration**: Complete access to OpenAI models including GPT-5.1 with Responses API
+- **OpenAI API Integration**: Complete access to OpenAI models including GPT-5.2 with Responses API
 - **AWS Lambda Deployment**: Scalable serverless deployment with Function URLs (no timeout limits)
 - **Custom Domain Support**: SSL certificates and CloudFront distribution for production use
 - **Secure Authentication**: Basic auth with AWS Secrets Manager integration
-- **GPT-5.1 Advanced Features**: Reasoning effort control, verbosity settings, and Responses API support
+- **GPT-5.2 Advanced Features**: Reasoning effort control, verbosity settings, and Responses API support
 - **TypeScript Implementation**: Fully typed codebase with robust error handling
 - **Infrastructure as Code**: CDK deployment with multi-region support
 
@@ -148,7 +148,7 @@ The server implements the full MCP JSON-RPC 2.0 protocol:
     "name": "query_openai",
     "arguments": {
       "prompt": "Explain quantum computing",
-      "model": "gpt-5.1",
+      "model": "gpt-5.2",
       "reasoning_effort": "high",
       "verbosity": "high",
       "use_responses_api": true
@@ -161,20 +161,20 @@ The server implements the full MCP JSON-RPC 2.0 protocol:
 
 #### query_openai
 
-Query OpenAI's API with advanced GPT-5.1 support:
+Query OpenAI's API with advanced GPT-5.2 support:
 
 **Parameters:**
 - `prompt` (required): The prompt to send to OpenAI
-- `model` (optional): OpenAI model to use (default: "gpt-5.1")
+- `model` (optional): OpenAI model to use (default: "gpt-5.2")
 - `max_tokens` (optional): Maximum tokens in response (default: 1000)
-- `max_completion_tokens` (optional): Maximum completion tokens for GPT-5.1
-- `reasoning_effort` (optional): GPT-5.1 reasoning effort level: "minimal", "low", "medium", "high" (default: "medium")
-- `verbosity` (optional): GPT-5.1 response verbosity: "low", "medium", "high" (default: "medium")
-- `use_responses_api` (optional): Use GPT-5.1 Responses API for better performance (default: true)
+- `max_completion_tokens` (optional): Maximum completion tokens for GPT-5.2
+- `reasoning_effort` (optional): GPT-5.2 reasoning effort level: "minimal", "low", "medium", "high" (default: "medium")
+- `verbosity` (optional): GPT-5.2 response verbosity: "low", "medium", "high" (default: "medium")
+- `use_responses_api` (optional): Use GPT-5.2 Responses API for better performance (default: true)
 
-**GPT-5.1 Features:**
+**GPT-5.2 Features:**
 - **Responses API**: Optimized API for better performance and reasoning
-- **Reasoning Effort**: Control how much computational effort GPT-5.1 uses
+- **Reasoning Effort**: Control how much computational effort GPT-5.2 uses
 - **Verbosity Control**: Adjust response detail level
 - **Long Context**: Supports extended reasoning sessions up to 15 minutes
 
@@ -190,7 +190,7 @@ Query OpenAI's API with advanced GPT-5.1 support:
 
 ## Architecture
 
-**Timeout-Free Design**: Uses Lambda Function URLs instead of API Gateway to eliminate timeout limitations, enabling long GPT-5.1 reasoning calls (up to 15 minutes).
+**Timeout-Free Design**: Uses Lambda Function URLs instead of API Gateway to eliminate timeout limitations, enabling long GPT-5.2 reasoning calls (up to 15 minutes).
 
 **Security**: Basic Authentication with AWS Secrets Manager integration prevents unauthorized access.
 

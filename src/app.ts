@@ -77,7 +77,7 @@ export async function initializeApp(): Promise<void> {
 
     openai = new OpenAI({
       apiKey: apiKey,
-      timeout: 14 * 60 * 1000, // 14 minutes for long GPT-5.1 calls
+      timeout: 14 * 60 * 1000, // 14 minutes for long GPT-5.2 calls
       maxRetries: 1,
     });
     initialized = true;
@@ -151,32 +151,32 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             model: {
               type: 'string',
               description: 'The OpenAI model to use',
-              default: 'gpt-5.1',
+              default: 'gpt-5.2',
             },
             max_tokens: {
               type: 'number',
-              description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.1)',
+              description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.2)',
               default: 1000,
             },
             max_completion_tokens: {
               type: 'number',
-              description: 'Maximum completion tokens (for GPT-5.1 and newer models)',
+              description: 'Maximum completion tokens (for GPT-5.2 and newer models)',
             },
             reasoning_effort: {
               type: 'string',
-              description: 'Reasoning effort level for GPT-5.1 models',
+              description: 'Reasoning effort level for GPT-5.2 models',
               enum: ['minimal', 'low', 'medium', 'high'],
               default: 'medium',
             },
             verbosity: {
               type: 'string',
-              description: 'Response verbosity level for GPT-5.1 models',
+              description: 'Response verbosity level for GPT-5.2 models',
               enum: ['low', 'medium', 'high'],
               default: 'medium',
             },
             use_responses_api: {
               type: 'boolean',
-              description: 'Use Responses API for GPT-5.1 (recommended for best performance)',
+              description: 'Use Responses API for GPT-5.2 (recommended for best performance)',
               default: true,
             },
           },
@@ -195,7 +195,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
   if (request.method === 'tools/call' && request.params?.name === 'query_openai') {
     const {
       prompt,
-      model = 'gpt-5.1',
+      model = 'gpt-5.2',
       max_tokens = 1000,
       max_completion_tokens,
       reasoning_effort = 'medium',
@@ -206,7 +206,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
     try {
       if (model.startsWith('gpt-5')) {
         if (use_responses_api) {
-          // GPT-5.1 with Responses API (recommended)
+          // GPT-5.2 with Responses API (recommended)
           const responseOptions: any = {
             model,
             input: prompt,
@@ -229,7 +229,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             }
           };
         } else {
-          // GPT-5.1 with Chat Completions API
+          // GPT-5.2 with Chat Completions API
           const requestOptions: any = {
             model,
             messages: [{ role: 'user', content: prompt }],
