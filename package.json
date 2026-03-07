@@ -3,44 +3,28 @@
   "version": "1.0.0",
   "description": "MCP server for OpenAI API queries",
   "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "openai-mcp": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server-entry.js",
     "dev": "tsx src/index.ts",
-    "dev:http": "npm run build && node bin/dev.js",
-    "dev:direct": "tsx src/server-entry.ts",
-    "deploy": "npm run build && cdk deploy",
-    "setup": "node -e \"console.log('Please create config.json from config.json.example with your settings')\"",
-    "cdk": "cdk",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.873.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "aws-cdk-lib": "^2.164.1",
-    "constructs": "^10.3.0",
     "openai": "^4.67.1"
   },
   "devDependencies": {
-    "@jest/globals": "^30.2.0",
-    "@types/aws-lambda": "^8.10.145",
-    "@types/jest": "^30.0.0",
     "@types/node": "^22.7.4",
-    "aws-cdk": "^2.164.1",
-    "jest": "^30.2.0",
-    "source-map-support": "^0.5.21",
-    "ts-jest": "^29.4.5",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2"
   },
   "keywords": [
     "mcp",
     "openai",
-    "api",
-    "aws",
-    "cdk"
+    "ai"
   ],
   "author": "",
   "license": "MIT",
