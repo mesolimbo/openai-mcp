@@ -158,7 +158,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             max_tokens: {
               type: 'number',
               description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.4)',
-              default: 1000,
+              default: 100000,
             },
             max_completion_tokens: {
               type: 'number',
@@ -247,7 +247,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
     const {
       prompt,
       model = DEFAULT_MODEL,
-      max_tokens = 1000,
+      max_tokens = 100000,
       max_completion_tokens,
       reasoning_effort = 'medium',
       verbosity = 'medium',

@@ -222,7 +222,7 @@ describe('App Module', () => {
         input: 'Explain quantum computing',
         reasoning: { effort: 'high' },
         text: { verbosity: 'high' },
-        max_output_tokens: 1000,
+        max_output_tokens: 100000,
       });
     });
 
@@ -314,7 +314,7 @@ describe('App Module', () => {
         input: 'Test with defaults',
         reasoning: { effort: 'medium' },
         text: { verbosity: 'medium' },
-        max_output_tokens: 1000,
+        max_output_tokens: 100000,
       });
     });
   });
