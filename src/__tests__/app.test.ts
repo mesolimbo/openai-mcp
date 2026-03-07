@@ -222,7 +222,7 @@ describe('App Module', () => {
         input: 'Explain quantum computing',
         reasoning: { effort: 'high' },
         text: { verbosity: 'high' },
-        max_output_tokens: 16000,
+        max_output_tokens: 100000,
       });
     });
 
@@ -288,6 +288,60 @@ describe('App Module', () => {
       expect(response.error?.message).toContain('API rate limit exceeded');
     });
 
+    test('should extract text from output items when output_text is empty', async () => {
+      mockResponsesCreate.mockResolvedValue({
+        output_text: '',
+        output: [
+          {
+            type: 'message',
+            content: [
+              { type: 'text', text: 'Fallback text from output items' }
+            ]
+          }
+        ]
+      });
+
+      const request = {
+        jsonrpc: '2.0',
+        id: 20,
+        method: 'tools/call',
+        params: {
+          name: 'query_openai',
+          arguments: {
+            prompt: 'Test fallback extraction'
+          }
+        }
+      };
+
+      const response = await handleMcpRequest(request);
+      expect(response.result?.content[0]?.text).toBe('Fallback text from output items');
+    });
+
+    test('should return diagnostic info when no text output at all', async () => {
+      mockResponsesCreate.mockResolvedValue({
+        output_text: '',
+        output: [],
+        status: 'completed',
+        usage: { input_tokens: 50, output_tokens: 0 }
+      });
+
+      const request = {
+        jsonrpc: '2.0',
+        id: 21,
+        method: 'tools/call',
+        params: {
+          name: 'query_openai',
+          arguments: {
+            prompt: 'Test empty response'
+          }
+        }
+      };
+
+      const response = await handleMcpRequest(request);
+      expect(response.result?.content[0]?.text).toContain('No text output received');
+      expect(response.result?.content[0]?.text).toContain('input_tokens: 50');
+    });
+
     test('should use default parameters when not provided', async () => {
       mockResponsesCreate.mockResolvedValue({
         output_text: 'Default params response'
@@ -311,9 +365,9 @@ describe('App Module', () => {
       expect(mockResponsesCreate).toHaveBeenCalledWith({
         model: DEFAULT_MODEL,
         input: 'Test with defaults',
-        reasoning: { effort: 'low' },
+        reasoning: { effort: 'medium' },
         text: { verbosity: 'medium' },
-        max_output_tokens: 16000,
+        max_output_tokens: 100000,
       });
     });
   });

@@ -158,7 +158,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             max_tokens: {
               type: 'number',
               description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.4)',
-              default: 16000,
+              default: 100000,
             },
             max_completion_tokens: {
               type: 'number',
@@ -168,7 +168,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
               type: 'string',
               description: 'Reasoning effort level for GPT-5.4 models',
               enum: ['none', 'low', 'medium', 'high'],
-              default: 'low',
+              default: 'medium',
             },
             verbosity: {
               type: 'string',
@@ -247,12 +247,14 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
     const {
       prompt,
       model = DEFAULT_MODEL,
-      max_tokens = 16000,
+      max_tokens = 100000,
       max_completion_tokens,
-      reasoning_effort = 'low',
+      reasoning_effort = 'medium',
       verbosity = 'medium',
       use_responses_api = true,
     } = request.params.arguments;
+
+    const promptPreview = prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt;
 
     try {
       if (model.startsWith('gpt-5')) {
@@ -266,7 +268,58 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             max_output_tokens: max_completion_tokens || max_tokens,
           };
 
+          console.log('[query_openai] Responses API request:', {
+            model,
+            reasoning_effort,
+            verbosity,
+            max_output_tokens: responseOptions.max_output_tokens,
+            prompt_length: prompt.length,
+            prompt_preview: promptPreview,
+          });
+
           const response = await openai.responses.create(responseOptions);
+
+          const rawResponse = response as any;
+          console.log('[query_openai] Responses API raw response metadata:', {
+            id: rawResponse.id,
+            status: rawResponse.status,
+            output_text_length: response.output_text?.length ?? 0,
+            output_items: rawResponse.output?.length ?? 0,
+            output_types: rawResponse.output?.map((o: any) => o.type) ?? [],
+            usage: rawResponse.usage,
+          });
+
+          // Robust text extraction: try output_text first, then walk output items
+          let text = '';
+          if (response.output_text) {
+            text = response.output_text;
+          } else if (response.output && Array.isArray(response.output)) {
+            for (const item of response.output as any[]) {
+              if (item.type === 'message' && Array.isArray(item.content)) {
+                for (const part of item.content) {
+                  if (part.type === 'output_text' || part.type === 'text') {
+                    text += part.text || '';
+                  }
+                }
+              }
+            }
+            if (text) {
+              console.log('[query_openai] Extracted text from output items fallback, length:', text.length);
+            }
+          }
+
+          if (!text) {
+            const status = rawResponse.status || 'unknown';
+            const usage = rawResponse.usage;
+            const diag = usage
+              ? `Status: ${status}, input_tokens: ${usage.input_tokens}, output_tokens: ${usage.output_tokens}`
+              : `Status: ${status}, response keys: ${Object.keys(response).join(', ')}`;
+            console.warn('[query_openai] No text output extracted. Diagnostics:', diag);
+            console.warn('[query_openai] Full response structure:', JSON.stringify(rawResponse, null, 2).substring(0, 2000));
+            text = `No text output received. ${diag}`;
+          }
+
+          console.log('[query_openai] Returning text response, length:', text.length);
 
           return {
             jsonrpc: '2.0',
@@ -275,7 +328,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
               content: [
                 {
                   type: 'text',
-                  text: response.output_text || 'No response received',
+                  text,
                 },
               ]
             }
@@ -294,7 +347,24 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             requestOptions.max_tokens = max_tokens;
           }
 
+          console.log('[query_openai] Chat Completions request:', {
+            model,
+            reasoning_effort,
+            max_tokens: requestOptions.max_tokens,
+            max_completion_tokens: requestOptions.max_completion_tokens,
+            prompt_length: prompt.length,
+            prompt_preview: promptPreview,
+          });
+
           const response = await openai.chat.completions.create(requestOptions);
+
+          const content = response.choices[0]?.message?.content;
+          console.log('[query_openai] Chat Completions response:', {
+            id: response.id,
+            finish_reason: response.choices[0]?.finish_reason,
+            content_length: content?.length ?? 0,
+            usage: response.usage,
+          });
 
           return {
             jsonrpc: '2.0',
@@ -303,7 +373,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
               content: [
                 {
                   type: 'text',
-                  text: response.choices[0]?.message?.content || 'No response received',
+                  text: content || 'No response received',
                 },
               ]
             }
@@ -322,7 +392,23 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
           requestOptions.max_tokens = max_tokens;
         }
 
+        console.log('[query_openai] Chat Completions request (non-GPT5):', {
+          model,
+          max_tokens: requestOptions.max_tokens,
+          max_completion_tokens: requestOptions.max_completion_tokens,
+          prompt_length: prompt.length,
+          prompt_preview: promptPreview,
+        });
+
         const response = await openai.chat.completions.create(requestOptions);
+
+        const content = response.choices[0]?.message?.content;
+        console.log('[query_openai] Chat Completions response:', {
+          id: response.id,
+          finish_reason: response.choices[0]?.finish_reason,
+          content_length: content?.length ?? 0,
+          usage: response.usage,
+        });
 
         return {
           jsonrpc: '2.0',
@@ -331,13 +417,21 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             content: [
               {
                 type: 'text',
-                text: response.choices[0]?.message?.content || 'No response received',
+                text: content || 'No response received',
               },
             ]
           }
         };
       }
     } catch (error) {
+      console.error('[query_openai] Error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        model,
+        reasoning_effort,
+        prompt_length: prompt.length,
+        prompt_preview: promptPreview,
+      });
       return {
         jsonrpc: '2.0',
         id: request.id,
