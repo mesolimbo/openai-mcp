@@ -3,6 +3,7 @@ import { describe, test, expect, jest, beforeEach, afterEach } from '@jest/globa
 // Mock dependencies
 const mockChatCompletionsCreate = jest.fn() as jest.MockedFunction<any>;
 const mockResponsesCreate = jest.fn() as jest.MockedFunction<any>;
+const mockModelsRetrieve = jest.fn() as jest.MockedFunction<any>;
 const mockSend = jest.fn() as jest.MockedFunction<any>;
 
 jest.mock('openai', () => {
@@ -15,6 +16,9 @@ jest.mock('openai', () => {
       },
       responses: {
         create: mockResponsesCreate
+      },
+      models: {
+        retrieve: mockModelsRetrieve
       }
     }))
   };
@@ -38,17 +42,20 @@ jest.mock('../config', () => ({
 describe('App Module', () => {
   let handleMcpRequest: any;
   let initializeApp: any;
+  let DEFAULT_MODEL: string;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     mockChatCompletionsCreate.mockReset();
     mockResponsesCreate.mockReset();
+    mockModelsRetrieve.mockReset();
     mockSend.mockReset();
 
     // Import fresh module for each test
     const appModule = await import('../app');
     handleMcpRequest = appModule.handleMcpRequest;
     initializeApp = appModule.initializeApp;
+    DEFAULT_MODEL = appModule.DEFAULT_MODEL;
   });
 
   afterEach(() => {
@@ -109,6 +116,10 @@ describe('App Module', () => {
       expect(queryTool).toBeDefined();
       expect(queryTool.description).toContain('OpenAI');
       expect(queryTool.inputSchema.properties.prompt).toBeDefined();
+
+      const modelInfoTool = response.result?.tools.find((t: any) => t.name === 'get_model_info');
+      expect(modelInfoTool).toBeDefined();
+      expect(modelInfoTool.description).toContain('model');
     });
 
     test('should handle notifications/initialized', async () => {
@@ -180,9 +191,9 @@ describe('App Module', () => {
       });
     });
 
-    test('should query GPT-5.2 with Responses API', async () => {
+    test('should query default model with Responses API', async () => {
       mockResponsesCreate.mockResolvedValue({
-        output_text: 'Response from GPT-5.2'
+        output_text: 'Response from default model'
       });
 
       const request = {
@@ -193,7 +204,7 @@ describe('App Module', () => {
           name: 'query_openai',
           arguments: {
             prompt: 'Explain quantum computing',
-            model: 'gpt-5.2',
+            model: DEFAULT_MODEL,
             reasoning_effort: 'high',
             verbosity: 'high',
             use_responses_api: true
@@ -205,16 +216,16 @@ describe('App Module', () => {
 
       expect(response.jsonrpc).toBe('2.0');
       expect(response.id).toBe(6);
-      expect(response.result?.content[0]?.text).toBe('Response from GPT-5.2');
+      expect(response.result?.content[0]?.text).toBe('Response from default model');
       expect(mockResponsesCreate).toHaveBeenCalledWith({
-        model: 'gpt-5.2',
+        model: DEFAULT_MODEL,
         input: 'Explain quantum computing',
         reasoning: { effort: 'high' },
         text: { verbosity: 'high' }
       });
     });
 
-    test('should query GPT-5.2 with Chat Completions API', async () => {
+    test('should query default model with Chat Completions API', async () => {
       mockChatCompletionsCreate.mockResolvedValue({
         choices: [{
           message: {
@@ -231,7 +242,7 @@ describe('App Module', () => {
           name: 'query_openai',
           arguments: {
             prompt: 'Test prompt',
-            model: 'gpt-5.2',
+            model: DEFAULT_MODEL,
             reasoning_effort: 'medium',
             verbosity: 'low',
             use_responses_api: false,
@@ -244,7 +255,7 @@ describe('App Module', () => {
 
       expect(response.result?.content[0]?.text).toBe('Chat completion response');
       expect(mockChatCompletionsCreate).toHaveBeenCalledWith({
-        model: 'gpt-5.2',
+        model: DEFAULT_MODEL,
         messages: [{ role: 'user', content: 'Test prompt' }],
         reasoning_effort: 'medium',
         verbosity: 'low',
@@ -298,11 +309,90 @@ describe('App Module', () => {
 
       expect(response.result?.content[0]?.text).toBe('Default params response');
       expect(mockResponsesCreate).toHaveBeenCalledWith({
-        model: 'gpt-5.2',
+        model: DEFAULT_MODEL,
         input: 'Test with defaults',
         reasoning: { effort: 'medium' },
         text: { verbosity: 'medium' }
       });
+    });
+  });
+
+  describe('Get Model Info Tool', () => {
+    beforeEach(async () => {
+      await initializeApp();
+    });
+
+    test('should retrieve model info with default model', async () => {
+      mockModelsRetrieve.mockResolvedValue({
+        id: DEFAULT_MODEL,
+        object: 'model',
+        created: 1700000000,
+        owned_by: 'openai',
+      });
+
+      const request = {
+        jsonrpc: '2.0',
+        id: 10,
+        method: 'tools/call',
+        params: {
+          name: 'get_model_info',
+          arguments: {}
+        }
+      };
+
+      const response = await handleMcpRequest(request);
+
+      expect(response.jsonrpc).toBe('2.0');
+      expect(response.id).toBe(10);
+      const parsed = JSON.parse(response.result?.content[0]?.text);
+      expect(parsed.id).toBe(DEFAULT_MODEL);
+      expect(parsed.owned_by).toBe('openai');
+      expect(mockModelsRetrieve).toHaveBeenCalledWith(DEFAULT_MODEL);
+    });
+
+    test('should retrieve model info for a specified model', async () => {
+      mockModelsRetrieve.mockResolvedValue({
+        id: 'gpt-4',
+        object: 'model',
+        created: 1600000000,
+        owned_by: 'openai',
+      });
+
+      const request = {
+        jsonrpc: '2.0',
+        id: 11,
+        method: 'tools/call',
+        params: {
+          name: 'get_model_info',
+          arguments: { model: 'gpt-4' }
+        }
+      };
+
+      const response = await handleMcpRequest(request);
+
+      const parsed = JSON.parse(response.result?.content[0]?.text);
+      expect(parsed.id).toBe('gpt-4');
+      expect(mockModelsRetrieve).toHaveBeenCalledWith('gpt-4');
+    });
+
+    test('should handle errors when retrieving model info', async () => {
+      mockModelsRetrieve.mockRejectedValue(new Error('Model not found'));
+
+      const request = {
+        jsonrpc: '2.0',
+        id: 12,
+        method: 'tools/call',
+        params: {
+          name: 'get_model_info',
+          arguments: { model: 'nonexistent-model' }
+        }
+      };
+
+      const response = await handleMcpRequest(request);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.code).toBe(-32603);
+      expect(response.error?.message).toContain('Model not found');
     });
   });
 

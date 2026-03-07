@@ -2,6 +2,8 @@ import OpenAI from 'openai';
 import { loadConfig } from './config';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
+export const DEFAULT_MODEL = 'gpt-5.4';
+
 export interface McpRequest {
   jsonrpc?: string;
   id?: string | number;
@@ -77,7 +79,7 @@ export async function initializeApp(): Promise<void> {
 
     openai = new OpenAI({
       apiKey: apiKey,
-      timeout: 14 * 60 * 1000, // 14 minutes for long GPT-5.2 calls
+      timeout: 14 * 60 * 1000, // 14 minutes for long GPT-5.4 calls
       maxRetries: 1,
     });
     initialized = true;
@@ -151,40 +153,54 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             model: {
               type: 'string',
               description: 'The OpenAI model to use',
-              default: 'gpt-5.2',
+              default: DEFAULT_MODEL,
             },
             max_tokens: {
               type: 'number',
-              description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.2)',
+              description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.4)',
               default: 1000,
             },
             max_completion_tokens: {
               type: 'number',
-              description: 'Maximum completion tokens (for GPT-5.2 and newer models)',
+              description: 'Maximum completion tokens (for GPT-5.4 and newer models)',
             },
             reasoning_effort: {
               type: 'string',
-              description: 'Reasoning effort level for GPT-5.2 models',
+              description: 'Reasoning effort level for GPT-5.4 models',
               enum: ['minimal', 'low', 'medium', 'high'],
               default: 'medium',
             },
             verbosity: {
               type: 'string',
-              description: 'Response verbosity level for GPT-5.2 models',
+              description: 'Response verbosity level for GPT-5.4 models',
               enum: ['low', 'medium', 'high'],
               default: 'medium',
             },
             use_responses_api: {
               type: 'boolean',
-              description: 'Use Responses API for GPT-5.2 (recommended for best performance)',
+              description: 'Use Responses API for GPT-5.4 (recommended for best performance)',
               default: true,
             },
           },
           required: ['prompt'],
         },
       },
+      {
+        name: 'get_model_info',
+        description: 'Get information about the OpenAI model that will be used for queries',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            model: {
+              type: 'string',
+              description: 'The model to get info for (defaults to the server default model)',
+              default: DEFAULT_MODEL,
+            },
+          },
+        },
+      },
     ];
-    
+
     return {
       jsonrpc: '2.0',
       id: request.id,
@@ -192,10 +208,45 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
     };
   }
 
+  if (request.method === 'tools/call' && request.params?.name === 'get_model_info') {
+    const { model = DEFAULT_MODEL } = request.params.arguments || {};
+
+    try {
+      const modelInfo = await openai.models.retrieve(model);
+
+      return {
+        jsonrpc: '2.0',
+        id: request.id,
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                id: modelInfo.id,
+                object: modelInfo.object,
+                created: modelInfo.created,
+                owned_by: modelInfo.owned_by,
+              }, null, 2),
+            },
+          ]
+        }
+      };
+    } catch (error) {
+      return {
+        jsonrpc: '2.0',
+        id: request.id,
+        error: {
+          code: -32603,
+          message: `Error retrieving model info: ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
+      };
+    }
+  }
+
   if (request.method === 'tools/call' && request.params?.name === 'query_openai') {
     const {
       prompt,
-      model = 'gpt-5.2',
+      model = DEFAULT_MODEL,
       max_tokens = 1000,
       max_completion_tokens,
       reasoning_effort = 'medium',
@@ -206,7 +257,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
     try {
       if (model.startsWith('gpt-5')) {
         if (use_responses_api) {
-          // GPT-5.2 with Responses API (recommended)
+          // GPT-5.4 with Responses API (recommended)
           const responseOptions: any = {
             model,
             input: prompt,
@@ -229,7 +280,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             }
           };
         } else {
-          // GPT-5.2 with Chat Completions API
+          // GPT-5.4 with Chat Completions API
           const requestOptions: any = {
             model,
             messages: [{ role: 'user', content: prompt }],
