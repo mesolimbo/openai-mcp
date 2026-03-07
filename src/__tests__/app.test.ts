@@ -222,7 +222,7 @@ describe('App Module', () => {
         input: 'Explain quantum computing',
         reasoning: { effort: 'high' },
         text: { verbosity: 'high' },
-        max_output_tokens: 100000,
+        max_output_tokens: 16000,
       });
     });
 
@@ -259,7 +259,6 @@ describe('App Module', () => {
         model: DEFAULT_MODEL,
         messages: [{ role: 'user', content: 'Test prompt' }],
         reasoning_effort: 'medium',
-        verbosity: 'low',
         max_completion_tokens: 2000
       });
     });
@@ -312,9 +311,9 @@ describe('App Module', () => {
       expect(mockResponsesCreate).toHaveBeenCalledWith({
         model: DEFAULT_MODEL,
         input: 'Test with defaults',
-        reasoning: { effort: 'medium' },
+        reasoning: { effort: 'low' },
         text: { verbosity: 'medium' },
-        max_output_tokens: 100000,
+        max_output_tokens: 16000,
       });
     });
   });

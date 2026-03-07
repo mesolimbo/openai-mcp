@@ -158,7 +158,7 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             max_tokens: {
               type: 'number',
               description: 'Maximum tokens in the response (use max_completion_tokens for GPT-5.4)',
-              default: 100000,
+              default: 16000,
             },
             max_completion_tokens: {
               type: 'number',
@@ -167,8 +167,8 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             reasoning_effort: {
               type: 'string',
               description: 'Reasoning effort level for GPT-5.4 models',
-              enum: ['minimal', 'low', 'medium', 'high'],
-              default: 'medium',
+              enum: ['none', 'low', 'medium', 'high'],
+              default: 'low',
             },
             verbosity: {
               type: 'string',
@@ -247,9 +247,9 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
     const {
       prompt,
       model = DEFAULT_MODEL,
-      max_tokens = 100000,
+      max_tokens = 16000,
       max_completion_tokens,
-      reasoning_effort = 'medium',
+      reasoning_effort = 'low',
       verbosity = 'medium',
       use_responses_api = true,
     } = request.params.arguments;
@@ -286,7 +286,6 @@ export async function handleMcpRequest(request: McpRequest): Promise<McpResponse
             model,
             messages: [{ role: 'user', content: prompt }],
             reasoning_effort: reasoning_effort,
-            verbosity: verbosity,
           };
 
           if (max_completion_tokens !== undefined) {
