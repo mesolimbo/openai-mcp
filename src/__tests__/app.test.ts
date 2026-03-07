@@ -221,7 +221,8 @@ describe('App Module', () => {
         model: DEFAULT_MODEL,
         input: 'Explain quantum computing',
         reasoning: { effort: 'high' },
-        text: { verbosity: 'high' }
+        text: { verbosity: 'high' },
+        max_output_tokens: 1000,
       });
     });
 
@@ -312,7 +313,8 @@ describe('App Module', () => {
         model: DEFAULT_MODEL,
         input: 'Test with defaults',
         reasoning: { effort: 'medium' },
-        text: { verbosity: 'medium' }
+        text: { verbosity: 'medium' },
+        max_output_tokens: 1000,
       });
     });
   });
