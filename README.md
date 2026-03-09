@@ -75,7 +75,7 @@ Query OpenAI's API with GPT-5.4 support.
 Get information about an OpenAI model.
 
 **Parameters:**
-- `model` (optional): The model to get info for (default: `gpt-5.4`)
+- `model` (optional): The model to get the default model version (e.g.: `gpt-5.4`)
 
 ## Scripts
 
