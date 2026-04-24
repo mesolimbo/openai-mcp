@@ -1,6 +1,6 @@
 # OpenAI MCP Server
 
-A Model Context Protocol (MCP) server for querying OpenAI's API, including GPT-5.4 with advanced reasoning capabilities. Runs locally via stdio.
+A Model Context Protocol (MCP) server for querying OpenAI's API, including GPT-5.5 with advanced reasoning capabilities. Runs locally via stdio.
 
 ## Setup
 
@@ -60,11 +60,11 @@ For Claude Code or other MCP clients, add to your MCP config:
 
 ### query_openai
 
-Query OpenAI's API with GPT-5.4 support.
+Query OpenAI's API with GPT-5.5 support.
 
 **Parameters:**
 - `prompt` (required): The prompt to send to OpenAI
-- `model` (optional): OpenAI model to use (default: `gpt-5.4`)
+- `model` (optional): OpenAI model to use (default: `gpt-5.5`)
 - `max_tokens` (optional): Maximum tokens in response (default: 16384)
 - `max_completion_tokens` (optional): Maximum completion tokens for GPT-5.x models
 - `reasoning_effort` (optional): Reasoning effort level: `none`, `low`, `medium`, `high` (default: `low`)
@@ -75,7 +75,7 @@ Query OpenAI's API with GPT-5.4 support.
 Get information about an OpenAI model.
 
 **Parameters:**
-- `model` (optional): The model to get the default model version (e.g.: `gpt-5.4`)
+- `model` (optional): The model to get the default model version (e.g.: `gpt-5.5`)
 
 ## Scripts
 

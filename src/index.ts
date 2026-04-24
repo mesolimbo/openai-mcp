@@ -9,7 +9,7 @@ import {
 import OpenAI from 'openai';
 import { loadConfig } from './config.js';
 
-const DEFAULT_MODEL = 'gpt-5.4';
+const DEFAULT_MODEL = 'gpt-5.5';
 
 let openai: OpenAI;
 
