@@ -7,9 +7,15 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import OpenAI from 'openai';
+import { createRequire } from 'module';
 import { loadConfig } from './config.js';
 
 const DEFAULT_MODEL = 'gpt-5.5';
+
+const pkg = createRequire(import.meta.url)('../package.json') as {
+  name: string;
+  version: string;
+};
 
 let openai: OpenAI;
 
@@ -26,8 +32,8 @@ try {
 
 const server = new Server(
   {
-    name: 'openai-mcp-server',
-    version: '1.0.0',
+    name: pkg.name,
+    version: pkg.version,
   },
   {
     capabilities: {
@@ -90,6 +96,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               default: DEFAULT_MODEL,
             },
           },
+        },
+      },
+      {
+        name: 'get_version',
+        description: 'Get the name and version of this MCP server',
+        inputSchema: {
+          type: 'object',
+          properties: {},
         },
       },
     ],
@@ -215,6 +229,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         isError: true,
       };
     }
+  }
+
+  if (request.params.name === 'get_version') {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ name: pkg.name, version: pkg.version }, null, 2),
+        },
+      ],
+    };
   }
 
   throw new Error(`Unknown tool: ${request.params.name}`);
