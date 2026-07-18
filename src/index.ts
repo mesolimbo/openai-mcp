@@ -10,7 +10,7 @@ import OpenAI from 'openai';
 import { createRequire } from 'module';
 import { loadConfig } from './config.js';
 
-const DEFAULT_MODEL = 'gpt-5.5';
+const DEFAULT_MODEL = 'gpt-5.6-sol';
 
 const pkg = createRequire(import.meta.url)('../package.json') as {
   name: string;
@@ -72,7 +72,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             reasoning_effort: {
               type: 'string',
               description: 'Reasoning effort level for GPT-5.x models',
-              enum: ['none', 'low', 'medium', 'high'],
+              enum: ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
               default: 'low',
             },
             use_responses_api: {
@@ -133,7 +133,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const response = await openai.responses.create({
           model,
           input: prompt,
-          reasoning: { effort: reasoning_effort as 'low' | 'medium' | 'high' },
+          reasoning: { effort: reasoning_effort as 'low' | 'medium' | 'high' | 'xhigh' | 'max' },
           max_output_tokens: max_completion_tokens || max_tokens,
         } as any);
 
